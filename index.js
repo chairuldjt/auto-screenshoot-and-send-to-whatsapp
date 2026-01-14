@@ -82,7 +82,37 @@ client.on('ready', async () => {
             }
         };
 
-        const chats = await getChatsWithRetry();
+        let chats = [];
+        try {
+            chats = await getChatsWithRetry();
+        } catch (error) {
+            console.log('All attempts to get chats failed. Using fallback mode...');
+            console.log('Trying to continue with predefined group ID...');
+            // Fallback to predefined group if available
+            const fallbackGroupId = '120363423652785425@g.us'; // Use the previously selected group
+            console.log(`Using fallback group: ${fallbackGroupId}`);
+
+            // Test send screenshot sekali with fallback
+            console.log('Taking screenshot...');
+            const filepath = await takeScreenshot();
+            console.log(`Screenshot saved: ${filepath}`);
+            await sendScreenshot(fallbackGroupId, filepath);
+            console.log('Test screenshot sent with fallback group');
+
+            // Schedule setiap jam dengan fallback
+            cron.schedule('0 * * * *', async () => {
+                try {
+                    const filepath = await takeScreenshot();
+                    await sendScreenshot(fallbackGroupId, filepath);
+                    console.log('Screenshot sent to fallback group');
+                } catch (error) {
+                    console.error('Error in cron job:', error);
+                }
+            });
+
+            console.log('Bot started with fallback group. Screenshot will be taken every hour.');
+            return;
+        }
 
         if (chats.length === 0) {
             console.log('No chats found. Please make sure you have chats in WhatsApp.');
