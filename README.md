@@ -1,6 +1,6 @@
 # Auto Screenshot WhatsApp Bot
 
-Bot ini menggunakan whatsapp-web.js untuk mengambil screenshot layar penuh setiap jam dan mengirimkannya ke grup WhatsApp tertentu.
+Bot ini menggunakan whatsapp-web.js untuk mengambil screenshot layar penuh setiap jam dan mengirimkannya ke grup WhatsApp yang dipilih secara interaktif.
 
 ## Instalasi
 
@@ -16,23 +16,46 @@ Bot ini menggunakan whatsapp-web.js untuk mengambil screenshot layar penuh setia
 
 3. Scan QR code di terminal untuk login WhatsApp.
 
+4. **Pilih Grup Target**: Bot akan menampilkan daftar semua grup WhatsApp Anda dan meminta Anda memilih grup mana yang akan menerima screenshot.
+
+## Fitur Pemilihan Grup
+
+Bot memiliki dua mode pemilihan grup:
+
+### Mode Otomatis (Direkomendasikan)
+- Bot akan mencoba mengambil daftar semua chat WhatsApp Anda
+- Menampilkan daftar grup yang tersedia dengan nomor urut
+- Anda cukup memilih nomor grup yang diinginkan
+
+### Mode Manual (Fallback)
+- Jika pengambilan chat otomatis gagal, Anda bisa memasukkan Group ID secara manual
+- Format: `123456789@g.us` (contoh: `120363423652785425@g.us`)
+
 ## Konfigurasi
 
-- Ganti `GROUP_ID` di `index.js` dengan ID grup WA Anda.
 - Screenshot disimpan di folder `screenshots/`.
+- Jadwal screenshot dapat dikonfigurasi melalui file `.env` (lihat bagian Environment).
+- **Default**: Screenshot diambil setiap jam pada menit ke-0.
 
 ## Environment
 
-- Salin `.env.example` menjadi `.env` dan isi nilai `GROUP_ID` serta `CRON_SCHEDULE` jika perlu.
-- Jangan commit berkas `.env` yang berisi kredensial atau sesi.
+- Salin `.env.example` menjadi `.env` untuk mengubah jadwal screenshot jika diperlukan.
+- Jangan commit berkas `.env` yang berisi konfigurasi kustom.
+- **CRON_SCHEDULE**: Mengatur kapan screenshot diambil (format cron expression)
+  - `0 * * * *` = Setiap jam pada menit ke-0 (default)
+  - `*/30 * * * *` = Setiap 30 menit
+  - `0 9 * * *` = Setiap hari jam 9 pagi
 
 ## Sessions / Auth
 
-- Library menyimpan sesi WhatsApp di folder `auth_info_baileys/`. Folder ini sudah ditambahkan ke `.gitignore`.
-- Jangan men-commit atau membagikan isi `auth_info_baileys/` karena berisi kredensial sesi.
-- Untuk memulihkan sesi pada mesin lain, salin secara lokal folder `auth_info_baileys/` ke direktori proyek (tidak melalui repo).
+- Library menyimpan sesi WhatsApp di folder `.wwebjs_auth/` dan cache di `.wwebjs_cache/`.
+- Folder ini sudah ditambahkan ke `.gitignore`.
+- Jangan men-commit atau membagikan isi folder auth karena berisi kredensial sesi.
+- Untuk memulihkan sesi pada mesin lain, salin secara lokal folder `.wwebjs_auth/` ke direktori proyek (tidak melalui repo).
 
 ## Catatan
 
-- Bot berjalan di background setelah login.
+- Bot berjalan di background setelah login dan pemilihan grup.
 - Pastikan Node.js terinstall.
+- Bot akan mengambil screenshot setiap jam secara default.
+- Jika bot dimatikan dan dijalankan ulang, Anda perlu memilih grup kembali.

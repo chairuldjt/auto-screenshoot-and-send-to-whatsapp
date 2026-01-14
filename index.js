@@ -5,8 +5,10 @@ const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+require('dotenv').config();
 
 const GROUP_ID = '120363423652785425@g.us'; // Default fallback
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 * * * *'; // Default every hour
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -132,8 +134,8 @@ client.on('ready', async () => {
     await sendScreenshot(selectedGroupId, filepath);
     console.log('Initial screenshot sent successfully');
 
-    // Schedule every hour
-    cron.schedule('0 * * * *', async () => {
+    // Schedule every hour (or custom schedule from .env)
+    cron.schedule(CRON_SCHEDULE, async () => {
         try {
             const filepath = await takeScreenshot();
             await sendScreenshot(selectedGroupId, filepath);
@@ -143,7 +145,7 @@ client.on('ready', async () => {
         }
     });
 
-    console.log('Bot started successfully. Screenshot will be taken every hour.');
+    console.log(`Bot started successfully. Screenshot will be taken according to schedule: ${CRON_SCHEDULE}`);
 });
 
 client.initialize();
