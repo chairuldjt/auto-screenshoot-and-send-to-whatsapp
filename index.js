@@ -11,7 +11,7 @@ const GROUP_ID = '120363423652785425@g.us'; // Placeholder, akan diubah prompt
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: true, // Ubah true untuk background
+        headless: false, // Changed to false to see browser and select group
         protocolTimeout: 60000, // Increase timeout to 60 seconds
         args: [
             '--no-sandbox',
