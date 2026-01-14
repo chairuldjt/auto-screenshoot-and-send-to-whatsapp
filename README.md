@@ -22,13 +22,19 @@ Bot ini menggunakan whatsapp-web.js untuk mengambil screenshot layar penuh setia
 
 Bot memiliki beberapa mode pemilihan grup untuk kemudahan penggunaan:
 
+### Mode Fresh Start (Baru!)
+Ketika bot mendeteksi fresh start (setelah logout atau instalasi baru), bot akan:
+- **Otomatis menggunakan manual input** tanpa mencoba getChats yang unreliable
+- **Menunggu 60 detik** untuk memastikan WhatsApp Web fully synced
+- **Langsung prompt** untuk memasukkan Group ID
+
 ### Mode Grup Tersimpan (Prioritas Tertinggi)
 - Bot akan otomatis mendeteksi jika ada grup yang pernah dipilih sebelumnya
 - Opsi 1: Gunakan grup tersimpan (paling cepat)
 - Grup tersimpan disimpan di file `.saved_group_id` (tidak di-commit ke Git)
 
 ### Mode Pilihan Cara Mendapatkan Grup
-Ketika belum ada grup tersimpan, bot akan memberikan pilihan:
+Ketika belum ada grup tersimpan dan bukan fresh start, bot akan memberikan pilihan:
 - **Opsi 1**: Coba dapatkan grup otomatis (akan mencoba 3x dengan timeout cepat)
 - **Opsi 2**: Masukkan Group ID secara manual (cepat dan langsung)
 
@@ -37,7 +43,7 @@ Ketika belum ada grup tersimpan, bot akan memberikan pilihan:
 - Menampilkan daftar grup yang tersedia dengan nomor urut
 - Anda cukup memilih nomor grup yang diinginkan
 
-### Mode Manual (Jika Memilih Opsi 2 atau Otomatis Gagal)
+### Mode Manual (Fresh Start atau Jika Otomatis Gagal)
 - Masukkan Group ID secara manual
 - Format: `123456789@g.us` (contoh: `120363423652785425@g.us`)
 
@@ -75,5 +81,6 @@ Ketika belum ada grup tersimpan, bot akan memberikan pilihan:
 - Pastikan Node.js terinstall.
 - Bot akan mengambil screenshot setiap jam secara default.
 - **Grup tersimpan**: Setelah memilih grup pertama kali, bot akan mengingat pilihan Anda untuk penggunaan selanjutnya.
+- **Fresh Start**: Setelah logout WhatsApp Web atau menghapus folder `.wwebjs_auth`, bot akan otomatis menggunakan mode manual untuk reliability.
 - Jika bot dimatikan dan dijalankan ulang, Anda akan diberi opsi untuk menggunakan grup tersimpan atau memilih yang baru.
 - File `.saved_group_id` berisi ID grup yang dipilih (tidak di-commit ke Git).
