@@ -134,6 +134,15 @@ async function takeScreenshot() {
 }
 
 async function sendScreenshot(groupId, filepath) {
-    const media = MessageMedia.fromFilePath(filepath);
-    await client.sendMessage(groupId, media, { caption: 'Tes Automation' });
+    try {
+        const media = MessageMedia.fromFilePath(filepath);
+        await client.sendMessage(groupId, media, {
+            caption: `Screenshot ${new Date().toLocaleString()}`,
+            sendSeen: false  // Disable sendSeen to avoid markedUnread error
+        });
+        console.log('Screenshot sent successfully');
+    } catch (error) {
+        console.error('Error sending screenshot:', error.message);
+        // Don't crash the app, just log the error
+    }
 }
