@@ -1,6 +1,6 @@
 # Auto Screenshot WhatsApp Bot
 
-Bot ini menggunakan whatsapp-web.js untuk mengambil screenshot layar penuh setiap jam dan mengirimkannya ke grup WhatsApp yang dipilih secara interaktif.
+Bot sederhana yang mengambil screenshot layar secara otomatis setiap jam dan mengirimkannya ke grup WhatsApp yang ditentukan. Bot berjalan sepenuhnya di background tanpa membuka browser.
 
 ## Instalasi
 
@@ -14,40 +14,23 @@ Bot ini menggunakan whatsapp-web.js untuk mengambil screenshot layar penuh setia
    npm start
    ```
 
-3. Scan QR code di terminal untuk login WhatsApp.
+3. **Input Group ID**: Masukkan ID grup WhatsApp tempat screenshot akan dikirim
+4. **Scan QR**: Bot akan menampilkan QR code untuk login WhatsApp
+5. **Bot berjalan**: Setelah login berhasil, bot akan berjalan di background
 
-4. **Pilih Grup Target**: Bot akan menampilkan daftar semua grup WhatsApp Anda dan meminta Anda memilih grup mana yang akan menerima screenshot.
+## Konfigurasi Grup
 
-## Fitur Pemilihan Grup
+Bot menggunakan **input manual Group ID** untuk kemudahan dan reliability:
 
-Bot memiliki beberapa mode pemilihan grup untuk kemudahan penggunaan:
+- **Pertama kali**: Masukkan Group ID secara manual
+- **Selanjutnya**: Bot otomatis menggunakan Group ID yang tersimpan
+- **Format ID**: `120363423652785425@g.us`
 
-### Mode Fresh Start (Baru!)
-Ketika bot mendeteksi fresh start (setelah logout atau instalasi baru), bot akan:
-- **Otomatis menggunakan manual input** tanpa mencoba getChats yang unreliable
-- **Menunggu 60 detik** untuk memastikan WhatsApp Web fully synced
-- **Langsung prompt** untuk memasukkan Group ID
+### Cara Mendapatkan Group ID:
 
-### Mode Grup Tersimpan (Prioritas Tertinggi)
-- Bot akan otomatis mendeteksi jika ada grup yang pernah dipilih sebelumnya
-- Opsi 1: Gunakan grup tersimpan (paling cepat)
-- Grup tersimpan disimpan di file `.saved_group_id` (tidak di-commit ke Git)
-
-### Mode Pilihan Cara Mendapatkan Grup
-Ketika belum ada grup tersimpan dan bukan fresh start, bot akan memberikan pilihan:
-- **Opsi 1**: Coba dapatkan grup otomatis (akan mencoba 3x dengan timeout cepat)
-- **Opsi 2**: Masukkan Group ID secara manual (cepat dan langsung)
-
-### Mode Otomatis (Jika Memilih Opsi 1)
-- Bot akan mencoba mengambil daftar semua chat WhatsApp Anda
-- Menampilkan daftar grup yang tersedia dengan nomor urut
-- Anda cukup memilih nomor grup yang diinginkan
-
-### Mode Manual (Fresh Start atau Jika Otomatis Gagal)
-- Masukkan Group ID secara manual
-- Format: `123456789@g.us` (contoh: `120363423652785425@g.us`)
-
-### Mekanisme Retry
+1. **WhatsApp Web**: Buka grup → URL akan berisi ID
+2. **Contoh**: `https://web.whatsapp.com/group/120363423652785425@g.us`
+3. **Copy ID**: Bagian setelah `/group/`
 - Jika memilih otomatis, bot akan mencoba mendapatkan chat hingga 3 kali
 - Timeout 10 detik per attempt dengan jeda 3-6 detik antar retry
 - Jika semua retry gagal, otomatis beralih ke mode manual
@@ -77,10 +60,8 @@ Ketika belum ada grup tersimpan dan bukan fresh start, bot akan memberikan pilih
 
 ## Catatan
 
-- Bot berjalan di background setelah login dan pemilihan grup.
+- Bot berjalan di background sepenuhnya tanpa membuka browser WhatsApp.
 - Pastikan Node.js terinstall.
 - Bot akan mengambil screenshot setiap jam secara default.
-- **Grup tersimpan**: Setelah memilih grup pertama kali, bot akan mengingat pilihan Anda untuk penggunaan selanjutnya.
-- **Fresh Start**: Setelah logout WhatsApp Web atau menghapus folder `.wwebjs_auth`, bot akan otomatis menggunakan mode manual untuk reliability.
-- Jika bot dimatikan dan dijalankan ulang, Anda akan diberi opsi untuk menggunakan grup tersimpan atau memilih yang baru.
+- Setelah input Group ID pertama kali, bot akan mengingatnya untuk penggunaan selanjutnya.
 - File `.saved_group_id` berisi ID grup yang dipilih (tidak di-commit ke Git).

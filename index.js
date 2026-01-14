@@ -37,8 +37,8 @@ function loadSavedGroupId() {
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: false, // Changed to false to see browser and select group
-        protocolTimeout: 60000, // Increase timeout to 60 seconds
+        headless: true, // Run in background without opening browser
+        protocolTimeout: 60000,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -46,7 +46,9 @@ const client = new Client({
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor'
         ]
     },
     webVersionCache: {
@@ -60,199 +62,35 @@ client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 });
 
-async function promptGroup(chats) {
-    return new Promise((resolve) => {
+client.on('ready', async () => {
+    console.log('Client is ready! Waiting for sync...');
+
+    // Wait 10 seconds for sync
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    console.log('Sync wait done, checking for saved group...');
+
+    let selectedGroupId = loadSavedGroupId();
+
+    if (!selectedGroupId) {
+        // No saved group, prompt for manual input
+        console.log('No saved group found.');
+        console.log('Silakan masukkan Group ID secara manual.');
+
         const rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
         });
 
-        const savedGroupId = loadSavedGroupId();
-
-        console.log('\n=== PILIH GRUP UNTUK MENGIRIM SCREENSHOT ===');
-
-        if (savedGroupId) {
-            console.log(`Grup tersimpan sebelumnya: ${savedGroupId}`);
-            console.log('1. Gunakan grup tersimpan');
-        }
-
-        const groups = chats ? chats.filter(chat => chat.isGroup) : [];
-        const startIndex = savedGroupId ? 2 : 1;
-
-        if (groups.length > 0) {
-            console.log('\nGrup yang tersedia:');
-            groups.forEach((group, index) => {
-                console.log(`${startIndex + index}. ${group.name} (ID: ${group.id._serialized})`);
+        selectedGroupId = await new Promise((resolve) => {
+            rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
+                const cleanId = groupId.trim();
+                saveGroupId(cleanId);
+                rl.close();
+                resolve(cleanId);
             });
-        } else {
-            console.log('\nGrup yang tersedia:');
-            console.log('Tidak ada grup ditemukan.');
-        }
-
-        console.log('\n0. Masukkan Group ID secara manual');
-
-        const maxChoice = startIndex + groups.length - 1;
-        const promptText = savedGroupId ?
-            'Pilih nomor grup atau 0 untuk manual: ' :
-            'Pilih nomor grup (1-' + groups.length + ') atau 0 untuk manual: ';
-
-        rl.question(promptText, (answer) => {
-            const choice = parseInt(answer.trim());
-
-            if (savedGroupId && choice === 1) {
-                console.log(`Menggunakan grup tersimpan: ${savedGroupId}`);
-                rl.close();
-                resolve(savedGroupId);
-            } else if (choice === 0) {
-                rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
-                    const cleanId = groupId.trim();
-                    saveGroupId(cleanId);
-                    rl.close();
-                    resolve(cleanId);
-                });
-            } else if (groups.length > 0 && choice >= startIndex && choice <= maxChoice) {
-                const selectedGroup = groups[choice - startIndex];
-                console.log(`Grup dipilih: ${selectedGroup.name}`);
-                saveGroupId(selectedGroup.id._serialized);
-                rl.close();
-                resolve(selectedGroup.id._serialized);
-            } else {
-                console.log('Pilihan tidak valid, menggunakan grup default.');
-                rl.close();
-                resolve(GROUP_ID);
-            }
         });
-    });
-}
-
-client.on('ready', async () => {
-    console.log('Client is ready! Waiting for sync...');
-
-    // Check if this is a fresh start (no auth folder)
-    const fs = require('fs');
-    const path = require('path');
-    const authPath = path.join(__dirname, '.wwebjs_auth');
-    const isFreshStart = !fs.existsSync(authPath);
-
-    if (isFreshStart) {
-        console.log('Detected fresh start (no auth folder), using manual input mode...');
-        // Wait longer for fresh start: 60 seconds
-        await new Promise(resolve => setTimeout(resolve, 60000));
-        console.log('Sync wait done (60s), skipping getChats for reliability...');
     } else {
-        console.log('Auth folder found, attempting normal mode...');
-        // Normal wait: 5 seconds
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        console.log('Sync wait done (5s), checking for saved group...');
-    }
-
-    let selectedGroupId = null;
-    const savedGroupId = loadSavedGroupId();
-
-    if (savedGroupId) {
-        console.log(`Found saved group ID: ${savedGroupId}`);
-        // Ask if user wants to use saved group or choose new one
-        selectedGroupId = await promptGroup(null); // Pass null to indicate we have saved group
-    } else {
-        if (isFreshStart) {
-            // Fresh start: directly use manual input
-            console.log('Fresh start detected, using manual input for reliability...');
-            console.log('Silakan masukkan Group ID secara manual.');
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout
-            });
-            selectedGroupId = await new Promise((resolve) => {
-                rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
-                    const cleanId = groupId.trim();
-                    saveGroupId(cleanId);
-                    rl.close();
-                    resolve(cleanId);
-                });
-            });
-        } else {
-            // Normal start: give user choice
-            console.log('No saved group found.');
-            console.log('Pilih cara mendapatkan grup:');
-            console.log('1. Coba dapatkan grup otomatis (mungkin perlu waktu)');
-            console.log('2. Masukkan Group ID secara manual (cepat)');
-
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout
-            });
-
-            selectedGroupId = await new Promise((resolve) => {
-                rl.question('Pilih 1 atau 2: ', async (choice) => {
-                    rl.close();
-
-                    if (choice.trim() === '2') {
-                        // Manual input
-                        console.log('Silakan masukkan Group ID secara manual.');
-                        const manualRl = readline.createInterface({
-                            input: process.stdin,
-                            output: process.stdout
-                        });
-                        manualRl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
-                            const cleanId = groupId.trim();
-                            saveGroupId(cleanId);
-                            manualRl.close();
-                            resolve(cleanId);
-                        });
-                    } else {
-                        // Try auto
-                        console.log('Mencoba mendapatkan daftar chat...');
-
-                        let chats = null;
-
-                        // Try to get chats with faster retry attempts
-                        for (let attempt = 1; attempt <= 3; attempt++) {
-                            try {
-                                console.log(`Attempt ${attempt}/3 to get chats...`);
-                                // Set a shorter timeout for getChats
-                                const timeoutPromise = new Promise((_, reject) =>
-                                    setTimeout(() => reject(new Error('getChats timeout')), 10000)
-                                );
-                                chats = await Promise.race([client.getChats(), timeoutPromise]);
-                                console.log(`Successfully retrieved ${chats.length} chats`);
-                                break;
-                            } catch (error) {
-                                console.log(`Attempt ${attempt} failed: ${error.message}`);
-                                if (attempt < 3) {
-                                    const waitTime = attempt * 3000; // Faster wait: 3s, 6s
-                                    console.log(`Waiting ${waitTime/1000} seconds before retry...`);
-                                    await new Promise(resolve => setTimeout(resolve, waitTime));
-                                }
-                            }
-                        }
-
-                        if (!chats) {
-                            console.log('\nGagal mendapatkan daftar chat otomatis.');
-                            console.log('Silakan masukkan Group ID secara manual.');
-                            const manualRl = readline.createInterface({
-                                input: process.stdin,
-                                output: process.stdout
-                            });
-                            manualRl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
-                                const cleanId = groupId.trim();
-                                saveGroupId(cleanId);
-                                manualRl.close();
-                                resolve(cleanId);
-                            });
-                        } else {
-                            // Get chats successful, let user choose group
-                            const chosenId = await promptGroup(chats);
-                            resolve(chosenId);
-                        }
-                    }
-                });
-            });
-        }
-    }
-
-    if (!selectedGroupId) {
-        console.log('Tidak ada grup dipilih, menggunakan fallback default.');
-        selectedGroupId = GROUP_ID;
+        console.log(`Using saved group ID: ${selectedGroupId}`);
     }
 
     console.log(`Grup target: ${selectedGroupId}`);
@@ -276,6 +114,7 @@ client.on('ready', async () => {
     });
 
     console.log(`Bot started successfully. Screenshot will be taken according to schedule: ${CRON_SCHEDULE}`);
+    console.log('Bot is now running in background. You can close this terminal.');
 });
 
 client.initialize();
