@@ -7,7 +7,18 @@ const path = require('path');
 const readline = require('readline');
 require('dotenv').config();
 
-const GROUP_PRESETS = process.env.GROUP_PRESETS ? process.env.GROUP_PRESETS.split(',').map(id => id.trim()) : [];
+const GROUP_PRESETS = process.env.GROUP_PRESETS ? process.env.GROUP_PRESETS.split(',').map(preset => {
+    const trimmed = preset.trim();
+    const colonIndex = trimmed.lastIndexOf(':');
+    if (colonIndex > 0) {
+        const name = trimmed.substring(0, colonIndex).trim();
+        const id = trimmed.substring(colonIndex + 1).trim();
+        return { name, id };
+    } else {
+        // Fallback for old format (just ID)
+        return { name: trimmed, id: trimmed };
+    }
+}) : [];
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 * * * *'; // Default every hour
 const SAVED_GROUP_FILE = path.join(__dirname, '.saved_group_id');
 
@@ -86,7 +97,7 @@ client.on('ready', async () => {
         if (GROUP_PRESETS.length > 0) {
             console.log('\nPreset Groups:');
             GROUP_PRESETS.forEach((preset, index) => {
-                console.log(`${optionIndex}. ${preset}`);
+                console.log(`${optionIndex}. ${preset.name}`);
                 optionIndex++;
             });
         }
@@ -106,8 +117,8 @@ client.on('ready', async () => {
         if (choice >= 1 && choice < manualOption) {
             // Selected a preset
             const presetIndex = choice - 1;
-            selectedGroupId = GROUP_PRESETS[presetIndex];
-            console.log(`Selected preset group: ${selectedGroupId}`);
+            selectedGroupId = GROUP_PRESETS[presetIndex].id;
+            console.log(`Selected preset group: ${GROUP_PRESETS[presetIndex].name} (${selectedGroupId})`);
             saveGroupId(selectedGroupId);
         } else if (choice === manualOption) {
             // Manual input
@@ -196,7 +207,7 @@ async function sendScreenshot(groupId, filepath) {
 
         const media = MessageMedia.fromFilePath(filepath);
         await client.sendMessage(groupId, media, {
-            caption: `Screenshot ${new Date().toLocaleString()}`,
+            caption: `Screenshot`,
             sendSeen: false  // Disable sendSeen to avoid markedUnread error
         });
         console.log('Screenshot sent successfully');

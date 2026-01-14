@@ -23,13 +23,14 @@ Bot sederhana yang mengambil screenshot layar secara otomatis setiap jam dan men
 Bot menyediakan beberapa cara untuk mengatur Group ID target:
 
 ### 1. Preset Groups (Opsional)
-Anda dapat menambahkan preset Group IDs di file `.env` untuk kemudahan akses:
+Anda dapat menambahkan preset Group IDs dengan nama di file `.env` untuk kemudahan akses:
 
 ```env
-GROUP_PRESETS=120363423652785425@g.us,120363423652785426@g.us
+GROUP_PRESETS=Family Group:120363423652785425@g.us,Work Team:120363423652785426@g.us
 ```
 
-Bot akan menampilkan preset ini sebagai opsi cepat saat pertama kali setup.
+**Format**: `Nama Grup:ID_Grup@g.us`  
+Bot akan menampilkan nama grup sebagai opsi cepat saat setup.
 
 ### 2. Input Manual
 - **Pertama kali**: Pilih dari preset atau masukkan Group ID secara manual
@@ -58,9 +59,10 @@ Jika Anda ingin mengubah grup target atau setelah logout WhatsApp Web, gunakan o
 
 ### Variabel yang Tersedia:
 
-- **GROUP_PRESETS**: Daftar preset Group IDs (dipisahkan koma)
-  - Contoh: `GROUP_PRESETS=120363423652785425@g.us,120363423652785426@g.us`
-  - Bot akan menampilkan ini sebagai opsi cepat saat setup
+- **GROUP_PRESETS**: Daftar preset Group IDs dengan nama (dipisahkan koma)
+  - Format: `Nama Grup:120363423652785425@g.us`
+  - Contoh: `GROUP_PRESETS=Family Group:120363423652785425@g.us,Work Team:120363423652785426@g.us`
+  - Bot akan menampilkan nama grup sebagai opsi cepat saat setup
 
 - **CRON_SCHEDULE**: Mengatur kapan screenshot diambil (format cron expression)
   - `0 * * * *` = Setiap jam pada menit ke-0 (default)
