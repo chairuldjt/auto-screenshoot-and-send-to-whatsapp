@@ -33,8 +33,9 @@ GROUP_PRESETS=Family Group:120363423652785425@g.us,Work Team:120363423652785426@
 Bot akan menampilkan nama grup sebagai opsi cepat saat setup.
 
 ### 2. Input Manual
-- **Pertama kali**: Pilih dari preset atau masukkan Group ID secara manual
-- **Selanjutnya**: Bot otomatis menggunakan Group ID yang tersimpan
+- **Setiap startup**: Bot selalu menampilkan menu pilihan grup
+- **Pilih preset**: Pilih dari daftar preset jika tersedia
+- **Manual input**: Masukkan Group ID secara manual jika diperlukan
 - **Format ID**: `120363423652785425@g.us`
 
 ### 3. Clear Saved Session
@@ -75,7 +76,7 @@ Jika Anda ingin mengubah grup target atau setelah logout WhatsApp Web, gunakan o
 - Folder ini sudah ditambahkan ke `.gitignore`.
 - Jangan men-commit atau membagikan isi folder auth karena berisi kredensial sesi.
 - Untuk memulihkan sesi pada mesin lain, salin secara lokal folder `.wwebjs_auth/` ke direktori proyek (tidak melalui repo).
-- **Grup tersimpan**: Bot menyimpan ID grup yang dipilih di file `.saved_group_id` untuk memudahkan penggunaan di kemudian hari.
+- **Grup tersimpan**: Bot menyimpan ID grup yang dipilih di file `.saved_group_id` untuk referensi (tidak digunakan otomatis).
 - **Clear Session**: Gunakan opsi "Hapus sesi tersimpan" saat setup untuk menghapus Group ID tersimpan (berguna setelah logout WhatsApp Web).
 
 ## Catatan
@@ -83,5 +84,5 @@ Jika Anda ingin mengubah grup target atau setelah logout WhatsApp Web, gunakan o
 - Bot berjalan di background sepenuhnya tanpa membuka browser WhatsApp.
 - Pastikan Node.js terinstall.
 - Bot akan mengambil screenshot setiap jam secara default.
-- Setelah input Group ID pertama kali, bot akan mengingatnya untuk penggunaan selanjutnya.
+- Bot selalu menampilkan menu pilihan grup setiap kali dijalankan.
 - File `.saved_group_id` berisi ID grup yang dipilih (tidak di-commit ke Git).
