@@ -83,6 +83,11 @@ async function takeScreenshot() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `screenshot_${timestamp}.png`;
     const filepath = path.join(__dirname, 'screenshots', filename);
+    // Ensure screenshots directory exists
+    const dir = path.dirname(filepath);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(filepath, img);
     return filepath;
 }
