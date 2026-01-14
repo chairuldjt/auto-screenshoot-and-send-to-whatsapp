@@ -52,24 +52,64 @@ async function promptGroup(chats) {
 client.on('ready', async () => {
     console.log('Client is ready! Waiting for sync...');
 
-    // Wait 10 seconds for sync
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    // Wait 15 seconds for sync (increased from 10)
+    await new Promise(resolve => setTimeout(resolve, 15000));
     console.log('Sync wait done, getting chats...');
 
     try {
         console.log('Calling client.getChats()...');
 
-        // Add timeout for getChats operation
-        const chatsPromise = client.getChats();
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('getChats timed out after 30 seconds')), 30000)
-        );
+        // Add timeout for getChats operation with retry
+        const getChatsWithRetry = async (retries = 3) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    console.log(`Attempt ${i + 1}/${retries} to get chats...`);
+                    const chatsPromise = client.getChats();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('getChats timed out after 60 seconds')), 60000)
+                    );
+                    const chats = await Promise.race([chatsPromise, timeoutPromise]);
+                    return chats;
+                } catch (error) {
+                    console.log(`Attempt ${i + 1} failed: ${error.message}`);
+                    if (i < retries - 1) {
+                        console.log('Waiting 10 seconds before retry...');
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        };
 
-        const chats = await Promise.race([chatsPromise, timeoutPromise]);
-        console.log(`Total chats: ${chats.length}`);
+        const chats = await getChatsWithRetry();
 
         if (chats.length === 0) {
             console.log('No chats found. Please make sure you have chats in WhatsApp.');
+            console.log('Trying to continue with predefined group ID...');
+            // Fallback to predefined group if available
+            const fallbackGroupId = '120363423652785425@g.us'; // Use the previously selected group
+            console.log(`Using fallback group: ${fallbackGroupId}`);
+
+            // Test send screenshot sekali with fallback
+            console.log('Taking screenshot...');
+            const filepath = await takeScreenshot();
+            console.log(`Screenshot saved: ${filepath}`);
+            await sendScreenshot(fallbackGroupId, filepath);
+            console.log('Test screenshot sent with fallback group');
+
+            // Schedule setiap jam dengan fallback
+            cron.schedule('0 * * * *', async () => {
+                try {
+                    const filepath = await takeScreenshot();
+                    await sendScreenshot(fallbackGroupId, filepath);
+                    console.log('Screenshot sent to fallback group');
+                } catch (error) {
+                    console.error('Error in cron job:', error);
+                }
+            });
+
+            console.log('Bot started with fallback group. Screenshot will be taken every hour.');
             return;
         }
 
