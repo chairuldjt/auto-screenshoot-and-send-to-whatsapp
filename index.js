@@ -41,8 +41,14 @@ client.on('ready', async () => {
     console.log('Sync wait done, getting chats...');
 
     try {
+        console.log('Calling client.getChats()...');
         const chats = await client.getChats();
         console.log(`Total chats: ${chats.length}`);
+
+        if (chats.length === 0) {
+            console.log('No chats found. Please make sure you have chats in WhatsApp.');
+            return;
+        }
 
         // Prompt pilih grup
         const selectedGroupId = await promptGroup(chats);
@@ -72,7 +78,10 @@ client.on('ready', async () => {
 
         console.log('Bot started. Screenshot will be taken every hour.');
     } catch (error) {
-        console.error('Error in ready:', error);
+        console.error('Error in ready event:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack trace:', error.stack);
+        return;
     }
 });
 
