@@ -1,0 +1,6 @@
+2026/01/14-19:46:42.000 3998 Reusing MANIFEST E:\Project\xampp\htdocs\autossbailleys\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
+2026/01/14-19:46:42.003 3998 Recovering log #7
+2026/01/14-19:46:42.004 3998 Reusing old log E:\Project\xampp\htdocs\autossbailleys\.wwebjs_auth\session\Default\Local Storage\leveldb/000007.log 
+2026/01/14-20:16:50.142 370 Level-0 table #11: started
+2026/01/14-20:16:50.183 370 Level-0 table #11: 12909 bytes OK
+2026/01/14-20:16:50.184 370 Delete type=0 #7
