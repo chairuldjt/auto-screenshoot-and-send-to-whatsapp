@@ -10,7 +10,23 @@ const GROUP_ID = '120363423652785425@g.us'; // Placeholder, akan diubah prompt
 
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { headless: true } // Ubah true untuk background
+    puppeteer: {
+        headless: true, // Ubah true untuk background
+        protocolTimeout: 60000, // Increase timeout to 60 seconds
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu'
+        ]
+    },
+    webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+    }
 });
 
 client.on('qr', (qr) => {
@@ -42,7 +58,14 @@ client.on('ready', async () => {
 
     try {
         console.log('Calling client.getChats()...');
-        const chats = await client.getChats();
+
+        // Add timeout for getChats operation
+        const chatsPromise = client.getChats();
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('getChats timed out after 30 seconds')), 30000)
+        );
+
+        const chats = await Promise.race([chatsPromise, timeoutPromise]);
         console.log(`Total chats: ${chats.length}`);
 
         if (chats.length === 0) {
@@ -80,6 +103,15 @@ client.on('ready', async () => {
     } catch (error) {
         console.error('Error in ready event:', error);
         console.error('Error details:', error.message);
+
+        if (error.message.includes('timed out') || error.message.includes('timeout')) {
+            console.log('\n🔄 Timeout detected. Possible solutions:');
+            console.log('1. Check your internet connection');
+            console.log('2. Try restarting the application');
+            console.log('3. Make sure WhatsApp Web is accessible');
+            console.log('4. If problem persists, try running with headless: false to see browser');
+        }
+
         console.error('Stack trace:', error.stack);
         return;
     }
