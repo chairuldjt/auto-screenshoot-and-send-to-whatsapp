@@ -205,6 +205,12 @@ async function takeScreenshot() {
 
 async function sendScreenshot(groupId, filepath) {
     try {
+        // Check if client is still connected
+        if (!client.info || client.info.wid === undefined) {
+            console.log('Client not connected, skipping screenshot send');
+            return;
+        }
+
         const media = MessageMedia.fromFilePath(filepath);
         await client.sendMessage(groupId, media, {
             caption: `Screenshot ${new Date().toLocaleString()}`,
