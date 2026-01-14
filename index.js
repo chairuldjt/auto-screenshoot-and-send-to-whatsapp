@@ -7,8 +7,32 @@ const path = require('path');
 const readline = require('readline');
 require('dotenv').config();
 
-const GROUP_ID = '120363423652785425@g.us'; // Default fallback
+const GROUP_ID = process.env.GROUP_ID || '120363423652785425@g.us'; // Default fallback
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 * * * *'; // Default every hour
+const SAVED_GROUP_FILE = path.join(__dirname, '.saved_group_id');
+
+// Helper functions for saving/loading group ID
+function saveGroupId(groupId) {
+    try {
+        fs.writeFileSync(SAVED_GROUP_FILE, groupId);
+        console.log(`Group ID saved: ${groupId}`);
+    } catch (error) {
+        console.error('Error saving group ID:', error.message);
+    }
+}
+
+function loadSavedGroupId() {
+    try {
+        if (fs.existsSync(SAVED_GROUP_FILE)) {
+            const savedId = fs.readFileSync(SAVED_GROUP_FILE, 'utf8').trim();
+            console.log(`Loaded saved group ID: ${savedId}`);
+            return savedId;
+        }
+    } catch (error) {
+        console.error('Error loading saved group ID:', error.message);
+    }
+    return null;
+}
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -43,36 +67,53 @@ async function promptGroup(chats) {
             output: process.stdout
         });
 
-        console.log('\n=== PILIH GRUP UNTUK MENGIRIM SCREENSHOT ===');
-        console.log('Grup yang tersedia:');
+        const savedGroupId = loadSavedGroupId();
 
-        const groups = chats.filter(chat => chat.isGroup);
-        if (groups.length === 0) {
-            console.log('Tidak ada grup ditemukan. Masukkan Group ID secara manual:');
-            rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
-                rl.close();
-                resolve(groupId.trim());
-            });
-            return;
+        console.log('\n=== PILIH GRUP UNTUK MENGIRIM SCREENSHOT ===');
+
+        if (savedGroupId) {
+            console.log(`Grup tersimpan sebelumnya: ${savedGroupId}`);
+            console.log('1. Gunakan grup tersimpan');
         }
 
-        groups.forEach((group, index) => {
-            console.log(`${index + 1}. ${group.name} (ID: ${group.id._serialized})`);
-        });
+        const groups = chats ? chats.filter(chat => chat.isGroup) : [];
+        const startIndex = savedGroupId ? 2 : 1;
+
+        if (groups.length > 0) {
+            console.log('\nGrup yang tersedia:');
+            groups.forEach((group, index) => {
+                console.log(`${startIndex + index}. ${group.name} (ID: ${group.id._serialized})`);
+            });
+        } else {
+            console.log('\nGrup yang tersedia:');
+            console.log('Tidak ada grup ditemukan.');
+        }
 
         console.log('\n0. Masukkan Group ID secara manual');
 
-        rl.question('\nPilih nomor grup (1-' + groups.length + ') atau 0 untuk manual: ', (answer) => {
+        const maxChoice = startIndex + groups.length - 1;
+        const promptText = savedGroupId ?
+            'Pilih nomor grup atau 0 untuk manual: ' :
+            'Pilih nomor grup (1-' + groups.length + ') atau 0 untuk manual: ';
+
+        rl.question(promptText, (answer) => {
             const choice = parseInt(answer.trim());
 
-            if (choice === 0) {
+            if (savedGroupId && choice === 1) {
+                console.log(`Menggunakan grup tersimpan: ${savedGroupId}`);
+                rl.close();
+                resolve(savedGroupId);
+            } else if (choice === 0) {
                 rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
+                    const cleanId = groupId.trim();
+                    saveGroupId(cleanId);
                     rl.close();
-                    resolve(groupId.trim());
+                    resolve(cleanId);
                 });
-            } else if (choice >= 1 && choice <= groups.length) {
-                const selectedGroup = groups[choice - 1];
+            } else if (groups.length > 0 && choice >= startIndex && choice <= maxChoice) {
+                const selectedGroup = groups[choice - startIndex];
                 console.log(`Grup dipilih: ${selectedGroup.name}`);
+                saveGroupId(selectedGroup.id._serialized);
                 rl.close();
                 resolve(selectedGroup.id._serialized);
             } else {
@@ -89,35 +130,47 @@ client.on('ready', async () => {
 
     // Wait 15 seconds for sync (increased from 10)
     await new Promise(resolve => setTimeout(resolve, 15000));
-    console.log('Sync wait done, attempting to get chats...');
+    console.log('Sync wait done, checking for saved group...');
 
     let selectedGroupId = null;
-    let chats = null;
+    const savedGroupId = loadSavedGroupId();
 
-    // Try to get chats with retry mechanism
-    for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-            console.log(`Attempt ${attempt}/3 to get chats...`);
-            chats = await client.getChats();
-            console.log(`Successfully retrieved ${chats.length} chats`);
-            break;
-        } catch (error) {
-            console.log(`Attempt ${attempt} failed: ${error.message}`);
-            if (attempt < 3) {
-                console.log('Waiting 10 seconds before retry...');
-                await new Promise(resolve => setTimeout(resolve, 10000));
+    if (savedGroupId) {
+        console.log(`Found saved group ID: ${savedGroupId}`);
+        // Ask if user wants to use saved group or choose new one
+        selectedGroupId = await promptGroup(null); // Pass null to indicate we have saved group
+    } else {
+        // No saved group, try to get chats
+        console.log('No saved group found, attempting to get chats...');
+
+        let chats = null;
+
+        // Try to get chats with increased retry attempts and longer timeout
+        for (let attempt = 1; attempt <= 5; attempt++) {
+            try {
+                console.log(`Attempt ${attempt}/5 to get chats...`);
+                chats = await client.getChats();
+                console.log(`Successfully retrieved ${chats.length} chats`);
+                break;
+            } catch (error) {
+                console.log(`Attempt ${attempt} failed: ${error.message}`);
+                if (attempt < 5) {
+                    const waitTime = attempt * 10000; // Increasing wait time: 10s, 20s, 30s, 40s
+                    console.log(`Waiting ${waitTime/1000} seconds before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
             }
         }
-    }
 
-    // If getChats failed, allow manual input
-    if (!chats) {
-        console.log('\nGagal mendapatkan daftar chat otomatis.');
-        console.log('Silakan masukkan Group ID secara manual.');
-        selectedGroupId = await promptGroup([]);
-    } else {
-        // Get chats successful, let user choose group
-        selectedGroupId = await promptGroup(chats);
+        // If getChats failed, allow manual input
+        if (!chats) {
+            console.log('\nGagal mendapatkan daftar chat otomatis.');
+            console.log('Silakan masukkan Group ID secara manual.');
+            selectedGroupId = await promptGroup([]);
+        } else {
+            // Get chats successful, let user choose group
+            selectedGroupId = await promptGroup(chats);
+        }
     }
 
     if (!selectedGroupId) {

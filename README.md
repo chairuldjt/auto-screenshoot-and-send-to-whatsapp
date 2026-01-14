@@ -20,7 +20,12 @@ Bot ini menggunakan whatsapp-web.js untuk mengambil screenshot layar penuh setia
 
 ## Fitur Pemilihan Grup
 
-Bot memiliki dua mode pemilihan grup:
+Bot memiliki beberapa mode pemilihan grup untuk kemudahan penggunaan:
+
+### Mode Grup Tersimpan (Prioritas Tertinggi)
+- Bot akan otomatis mendeteksi jika ada grup yang pernah dipilih sebelumnya
+- Opsi 1: Gunakan grup tersimpan (paling cepat)
+- Grup tersimpan disimpan di file `.saved_group_id` (tidak di-commit ke Git)
 
 ### Mode Otomatis (Direkomendasikan)
 - Bot akan mencoba mengambil daftar semua chat WhatsApp Anda
@@ -30,6 +35,10 @@ Bot memiliki dua mode pemilihan grup:
 ### Mode Manual (Fallback)
 - Jika pengambilan chat otomatis gagal, Anda bisa memasukkan Group ID secara manual
 - Format: `123456789@g.us` (contoh: `120363423652785425@g.us`)
+
+### Mekanisme Retry
+- Bot akan mencoba mendapatkan chat hingga 5 kali dengan interval menunggu yang meningkat
+- Jika semua retry gagal, baru masuk ke mode manual
 
 ## Konfigurasi
 
@@ -52,10 +61,13 @@ Bot memiliki dua mode pemilihan grup:
 - Folder ini sudah ditambahkan ke `.gitignore`.
 - Jangan men-commit atau membagikan isi folder auth karena berisi kredensial sesi.
 - Untuk memulihkan sesi pada mesin lain, salin secara lokal folder `.wwebjs_auth/` ke direktori proyek (tidak melalui repo).
+- **Grup tersimpan**: Bot menyimpan ID grup yang dipilih di file `.saved_group_id` untuk memudahkan penggunaan di kemudian hari.
 
 ## Catatan
 
 - Bot berjalan di background setelah login dan pemilihan grup.
 - Pastikan Node.js terinstall.
 - Bot akan mengambil screenshot setiap jam secara default.
-- Jika bot dimatikan dan dijalankan ulang, Anda perlu memilih grup kembali.
+- **Grup tersimpan**: Setelah memilih grup pertama kali, bot akan mengingat pilihan Anda untuk penggunaan selanjutnya.
+- Jika bot dimatikan dan dijalankan ulang, Anda akan diberi opsi untuk menggunakan grup tersimpan atau memilih yang baru.
+- File `.saved_group_id` berisi ID grup yang dipilih (tidak di-commit ke Git).

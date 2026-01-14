@@ -1,6 +1,7 @@
 node_modules/
 .wwebjs_auth/
 .wwebjs_cache/
+.saved_group_id
 .env
 .env.local
 .DS_Store
