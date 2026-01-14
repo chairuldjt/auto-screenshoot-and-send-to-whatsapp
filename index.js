@@ -4,7 +4,7 @@ const screenshot = require('screenshot-desktop');
 const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
-const inquirer = require('inquirer');
+// Removed inquirer import - no longer needed
 
 const GROUP_ID = '120363423652785425@g.us'; // Placeholder, akan diubah prompt
 
@@ -35,18 +35,9 @@ client.on('qr', (qr) => {
 });
 
 async function promptGroup(chats) {
-    const groups = chats.filter(chat => chat.isGroup).map(chat => ({ name: chat.name, value: chat.id._serialized }));
-    if (groups.length === 0) {
-        console.log('Tidak ada grup ditemukan.');
-        return null;
-    }
-    const answer = await inquirer.prompt([{
-        type: 'list',
-        name: 'groupId',
-        message: 'Pilih grup untuk kirim screenshot:',
-        choices: groups
-    }]);
-    return answer.groupId;
+    // This function is no longer used since we skip getChats
+    console.log('promptGroup function is deprecated - using fallback mode');
+    return null;
 }
 
 client.on('ready', async () => {
@@ -54,137 +45,32 @@ client.on('ready', async () => {
 
     // Wait 15 seconds for sync (increased from 10)
     await new Promise(resolve => setTimeout(resolve, 15000));
-    console.log('Sync wait done, getting chats...');
+    console.log('Sync wait done, skipping getChats and using fallback mode...');
 
-    try {
-        console.log('Calling client.getChats()...');
+    // Direct fallback mode - skip getChats entirely
+    console.log('Using fallback group ID...');
+    const fallbackGroupId = '120363423652785425@g.us'; // Use the previously selected group
+    console.log(`Using fallback group: ${fallbackGroupId}`);
 
-        // Add timeout for getChats operation with retry
-        const getChatsWithRetry = async (retries = 3) => {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    console.log(`Attempt ${i + 1}/${retries} to get chats...`);
-                    const chatsPromise = client.getChats();
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('getChats timed out after 60 seconds')), 60000)
-                    );
-                    const chats = await Promise.race([chatsPromise, timeoutPromise]);
-                    return chats;
-                } catch (error) {
-                    console.log(`Attempt ${i + 1} failed: ${error.message}`);
-                    if (i < retries - 1) {
-                        console.log('Waiting 10 seconds before retry...');
-                        await new Promise(resolve => setTimeout(resolve, 10000));
-                    } else {
-                        throw error;
-                    }
-                }
-            }
-        };
+    // Test send screenshot sekali with fallback
+    console.log('Taking screenshot...');
+    const filepath = await takeScreenshot();
+    console.log(`Screenshot saved: ${filepath}`);
+    await sendScreenshot(fallbackGroupId, filepath);
+    console.log('Test screenshot sent with fallback group');
 
-        let chats = [];
+    // Schedule setiap jam dengan fallback
+    cron.schedule('0 * * * *', async () => {
         try {
-            chats = await getChatsWithRetry();
+            const filepath = await takeScreenshot();
+            await sendScreenshot(fallbackGroupId, filepath);
+            console.log('Screenshot sent to fallback group');
         } catch (error) {
-            console.log('All attempts to get chats failed. Using fallback mode...');
-            console.log('Trying to continue with predefined group ID...');
-            // Fallback to predefined group if available
-            const fallbackGroupId = '120363423652785425@g.us'; // Use the previously selected group
-            console.log(`Using fallback group: ${fallbackGroupId}`);
-
-            // Test send screenshot sekali with fallback
-            console.log('Taking screenshot...');
-            const filepath = await takeScreenshot();
-            console.log(`Screenshot saved: ${filepath}`);
-            await sendScreenshot(fallbackGroupId, filepath);
-            console.log('Test screenshot sent with fallback group');
-
-            // Schedule setiap jam dengan fallback
-            cron.schedule('0 * * * *', async () => {
-                try {
-                    const filepath = await takeScreenshot();
-                    await sendScreenshot(fallbackGroupId, filepath);
-                    console.log('Screenshot sent to fallback group');
-                } catch (error) {
-                    console.error('Error in cron job:', error);
-                }
-            });
-
-            console.log('Bot started with fallback group. Screenshot will be taken every hour.');
-            return;
+            console.error('Error in cron job:', error);
         }
+    });
 
-        if (chats.length === 0) {
-            console.log('No chats found. Please make sure you have chats in WhatsApp.');
-            console.log('Trying to continue with predefined group ID...');
-            // Fallback to predefined group if available
-            const fallbackGroupId = '120363423652785425@g.us'; // Use the previously selected group
-            console.log(`Using fallback group: ${fallbackGroupId}`);
-
-            // Test send screenshot sekali with fallback
-            console.log('Taking screenshot...');
-            const filepath = await takeScreenshot();
-            console.log(`Screenshot saved: ${filepath}`);
-            await sendScreenshot(fallbackGroupId, filepath);
-            console.log('Test screenshot sent with fallback group');
-
-            // Schedule setiap jam dengan fallback
-            cron.schedule('0 * * * *', async () => {
-                try {
-                    const filepath = await takeScreenshot();
-                    await sendScreenshot(fallbackGroupId, filepath);
-                    console.log('Screenshot sent to fallback group');
-                } catch (error) {
-                    console.error('Error in cron job:', error);
-                }
-            });
-
-            console.log('Bot started with fallback group. Screenshot will be taken every hour.');
-            return;
-        }
-
-        // Prompt pilih grup
-        const selectedGroupId = await promptGroup(chats);
-        if (!selectedGroupId) {
-            console.log('Tidak ada grup dipilih. Bot berhenti.');
-            return;
-        }
-        console.log(`Grup dipilih: ${selectedGroupId}`);
-
-        // Test send screenshot sekali
-        console.log('Taking screenshot...');
-        const filepath = await takeScreenshot();
-        console.log(`Screenshot saved: ${filepath}`);
-        await sendScreenshot(selectedGroupId, filepath);
-        console.log('Test screenshot sent');
-
-        // Schedule setiap jam
-        cron.schedule('0 * * * *', async () => {
-            try {
-                const filepath = await takeScreenshot();
-                await sendScreenshot(selectedGroupId, filepath);
-                console.log('Screenshot sent');
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        });
-
-        console.log('Bot started. Screenshot will be taken every hour.');
-    } catch (error) {
-        console.error('Error in ready event:', error);
-        console.error('Error details:', error.message);
-
-        if (error.message.includes('timed out') || error.message.includes('timeout')) {
-            console.log('\n🔄 Timeout detected. Possible solutions:');
-            console.log('1. Check your internet connection');
-            console.log('2. Try restarting the application');
-            console.log('3. Make sure WhatsApp Web is accessible');
-            console.log('4. If problem persists, try running with headless: false to see browser');
-        }
-
-        console.error('Stack trace:', error.stack);
-        return;
-    }
+    console.log('Bot started with fallback group. Screenshot will be taken every hour.');
 });
 
 client.initialize();
