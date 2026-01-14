@@ -7,10 +7,8 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "fs": "^0.0.1-security",
     "inquirer": "^8.2.7",
     "node-cron": "^3.0.3",
-    "path": "^0.12.7",
     "qrcode-terminal": "^0.12.0",
     "screenshot-desktop": "^1.15.0",
     "whatsapp-web.js": "^1.23.0"
