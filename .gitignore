@@ -1,5 +1,6 @@
 node_modules/
-auth_info_baileys/
+.wwebjs_auth/
+.wwebjs_cache/
 .env
 .env.local
 .DS_Store
