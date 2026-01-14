@@ -27,18 +27,24 @@ Bot memiliki beberapa mode pemilihan grup untuk kemudahan penggunaan:
 - Opsi 1: Gunakan grup tersimpan (paling cepat)
 - Grup tersimpan disimpan di file `.saved_group_id` (tidak di-commit ke Git)
 
-### Mode Otomatis (Direkomendasikan)
+### Mode Pilihan Cara Mendapatkan Grup
+Ketika belum ada grup tersimpan, bot akan memberikan pilihan:
+- **Opsi 1**: Coba dapatkan grup otomatis (akan mencoba 3x dengan timeout cepat)
+- **Opsi 2**: Masukkan Group ID secara manual (cepat dan langsung)
+
+### Mode Otomatis (Jika Memilih Opsi 1)
 - Bot akan mencoba mengambil daftar semua chat WhatsApp Anda
 - Menampilkan daftar grup yang tersedia dengan nomor urut
 - Anda cukup memilih nomor grup yang diinginkan
 
-### Mode Manual (Fallback)
-- Jika pengambilan chat otomatis gagal, Anda bisa memasukkan Group ID secara manual
+### Mode Manual (Jika Memilih Opsi 2 atau Otomatis Gagal)
+- Masukkan Group ID secara manual
 - Format: `123456789@g.us` (contoh: `120363423652785425@g.us`)
 
 ### Mekanisme Retry
-- Bot akan mencoba mendapatkan chat hingga 5 kali dengan interval menunggu yang meningkat
-- Jika semua retry gagal, baru masuk ke mode manual
+- Jika memilih otomatis, bot akan mencoba mendapatkan chat hingga 3 kali
+- Timeout 10 detik per attempt dengan jeda 3-6 detik antar retry
+- Jika semua retry gagal, otomatis beralih ke mode manual
 
 ## Konfigurasi
 

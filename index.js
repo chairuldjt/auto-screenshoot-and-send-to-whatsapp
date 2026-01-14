@@ -128,8 +128,8 @@ async function promptGroup(chats) {
 client.on('ready', async () => {
     console.log('Client is ready! Waiting for sync...');
 
-    // Wait 15 seconds for sync (increased from 10)
-    await new Promise(resolve => setTimeout(resolve, 15000));
+    // Wait 5 seconds for sync (reduced from 15)
+    await new Promise(resolve => setTimeout(resolve, 5000));
     console.log('Sync wait done, checking for saved group...');
 
     let selectedGroupId = null;
@@ -140,37 +140,82 @@ client.on('ready', async () => {
         // Ask if user wants to use saved group or choose new one
         selectedGroupId = await promptGroup(null); // Pass null to indicate we have saved group
     } else {
-        // No saved group, try to get chats
-        console.log('No saved group found, attempting to get chats...');
+        // No saved group, give user choice: try auto or manual
+        console.log('No saved group found.');
+        console.log('Pilih cara mendapatkan grup:');
+        console.log('1. Coba dapatkan grup otomatis (mungkin perlu waktu)');
+        console.log('2. Masukkan Group ID secara manual (cepat)');
 
-        let chats = null;
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
 
-        // Try to get chats with increased retry attempts and longer timeout
-        for (let attempt = 1; attempt <= 5; attempt++) {
-            try {
-                console.log(`Attempt ${attempt}/5 to get chats...`);
-                chats = await client.getChats();
-                console.log(`Successfully retrieved ${chats.length} chats`);
-                break;
-            } catch (error) {
-                console.log(`Attempt ${attempt} failed: ${error.message}`);
-                if (attempt < 5) {
-                    const waitTime = attempt * 10000; // Increasing wait time: 10s, 20s, 30s, 40s
-                    console.log(`Waiting ${waitTime/1000} seconds before retry...`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
+        selectedGroupId = await new Promise((resolve) => {
+            rl.question('Pilih 1 atau 2: ', async (choice) => {
+                rl.close();
+
+                if (choice.trim() === '2') {
+                    // Manual input
+                    console.log('Silakan masukkan Group ID secara manual.');
+                    const manualRl = readline.createInterface({
+                        input: process.stdin,
+                        output: process.stdout
+                    });
+                    manualRl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
+                        const cleanId = groupId.trim();
+                        saveGroupId(cleanId);
+                        manualRl.close();
+                        resolve(cleanId);
+                    });
+                } else {
+                    // Try auto
+                    console.log('Mencoba mendapatkan daftar chat...');
+
+                    let chats = null;
+
+                    // Try to get chats with faster retry attempts
+                    for (let attempt = 1; attempt <= 3; attempt++) {
+                        try {
+                            console.log(`Attempt ${attempt}/3 to get chats...`);
+                            // Set a shorter timeout for getChats
+                            const timeoutPromise = new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error('getChats timeout')), 10000)
+                            );
+                            chats = await Promise.race([client.getChats(), timeoutPromise]);
+                            console.log(`Successfully retrieved ${chats.length} chats`);
+                            break;
+                        } catch (error) {
+                            console.log(`Attempt ${attempt} failed: ${error.message}`);
+                            if (attempt < 3) {
+                                const waitTime = attempt * 3000; // Faster wait: 3s, 6s
+                                console.log(`Waiting ${waitTime/1000} seconds before retry...`);
+                                await new Promise(resolve => setTimeout(resolve, waitTime));
+                            }
+                        }
+                    }
+
+                    if (!chats) {
+                        console.log('\nGagal mendapatkan daftar chat otomatis.');
+                        console.log('Silakan masukkan Group ID secara manual.');
+                        const manualRl = readline.createInterface({
+                            input: process.stdin,
+                            output: process.stdout
+                        });
+                        manualRl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
+                            const cleanId = groupId.trim();
+                            saveGroupId(cleanId);
+                            manualRl.close();
+                            resolve(cleanId);
+                        });
+                    } else {
+                        // Get chats successful, let user choose group
+                        const chosenId = await promptGroup(chats);
+                        resolve(chosenId);
+                    }
                 }
-            }
-        }
-
-        // If getChats failed, allow manual input
-        if (!chats) {
-            console.log('\nGagal mendapatkan daftar chat otomatis.');
-            console.log('Silakan masukkan Group ID secara manual.');
-            selectedGroupId = await promptGroup([]);
-        } else {
-            // Get chats successful, let user choose group
-            selectedGroupId = await promptGroup(chats);
-        }
+            });
+        });
     }
 
     if (!selectedGroupId) {
