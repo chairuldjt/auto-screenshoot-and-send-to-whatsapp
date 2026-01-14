@@ -7,7 +7,7 @@ const path = require('path');
 const readline = require('readline');
 require('dotenv').config();
 
-const GROUP_ID = process.env.GROUP_ID || '120363423652785425@g.us'; // Default fallback
+const GROUP_PRESETS = process.env.GROUP_PRESETS ? process.env.GROUP_PRESETS.split(',').map(id => id.trim()) : [];
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 * * * *'; // Default every hour
 const SAVED_GROUP_FILE = path.join(__dirname, '.saved_group_id');
 
@@ -72,23 +72,76 @@ client.on('ready', async () => {
     let selectedGroupId = loadSavedGroupId();
 
     if (!selectedGroupId) {
-        // No saved group, prompt for manual input
-        console.log('No saved group found.');
-        console.log('Silakan masukkan Group ID secara manual.');
+        // No saved group, show options
+        console.log('\n=== Auto Screenshot WhatsApp Bot ===');
+        console.log('Pilih opsi untuk Group ID:');
 
         const rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
         });
 
-        selectedGroupId = await new Promise((resolve) => {
-            rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
-                const cleanId = groupId.trim();
-                saveGroupId(cleanId);
-                rl.close();
-                resolve(cleanId);
+        // Show preset options if available
+        let optionIndex = 1;
+        if (GROUP_PRESETS.length > 0) {
+            console.log('\nPreset Groups:');
+            GROUP_PRESETS.forEach((preset, index) => {
+                console.log(`${optionIndex}. ${preset}`);
+                optionIndex++;
+            });
+        }
+
+        console.log('\nOther Options:');
+        const manualOption = optionIndex++;
+        console.log(`${manualOption}. Masukkan Group ID secara manual`);
+        const clearOption = optionIndex++;
+        console.log(`${clearOption}. Hapus sesi tersimpan (clear saved group)`);
+
+        const choice = await new Promise((resolve) => {
+            rl.question('\nPilih nomor opsi: ', (answer) => {
+                resolve(parseInt(answer.trim()));
             });
         });
+
+        if (choice >= 1 && choice < manualOption) {
+            // Selected a preset
+            const presetIndex = choice - 1;
+            selectedGroupId = GROUP_PRESETS[presetIndex];
+            console.log(`Selected preset group: ${selectedGroupId}`);
+            saveGroupId(selectedGroupId);
+        } else if (choice === manualOption) {
+            // Manual input
+            selectedGroupId = await new Promise((resolve) => {
+                rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
+                    const cleanId = groupId.trim();
+                    saveGroupId(cleanId);
+                    rl.close();
+                    resolve(cleanId);
+                });
+            });
+        } else if (choice === clearOption) {
+            // Clear saved session
+            if (fs.existsSync(SAVED_GROUP_FILE)) {
+                fs.unlinkSync(SAVED_GROUP_FILE);
+                console.log('Sesi tersimpan telah dihapus.');
+            } else {
+                console.log('Tidak ada sesi tersimpan untuk dihapus.');
+            }
+            console.log('Silakan restart bot untuk memilih grup baru.');
+            process.exit(0);
+        } else {
+            console.log('Pilihan tidak valid. Menggunakan input manual.');
+            selectedGroupId = await new Promise((resolve) => {
+                rl.question('Masukkan Group ID (contoh: 120363423652785425@g.us): ', (groupId) => {
+                    const cleanId = groupId.trim();
+                    saveGroupId(cleanId);
+                    rl.close();
+                    resolve(cleanId);
+                });
+            });
+        }
+
+        rl.close();
     } else {
         console.log(`Using saved group ID: ${selectedGroupId}`);
     }

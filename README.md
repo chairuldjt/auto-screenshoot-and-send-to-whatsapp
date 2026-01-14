@@ -20,20 +20,30 @@ Bot sederhana yang mengambil screenshot layar secara otomatis setiap jam dan men
 
 ## Konfigurasi Grup
 
-Bot menggunakan **input manual Group ID** untuk kemudahan dan reliability:
+Bot menyediakan beberapa cara untuk mengatur Group ID target:
 
-- **Pertama kali**: Masukkan Group ID secara manual
+### 1. Preset Groups (Opsional)
+Anda dapat menambahkan preset Group IDs di file `.env` untuk kemudahan akses:
+
+```env
+GROUP_PRESETS=120363423652785425@g.us,120363423652785426@g.us
+```
+
+Bot akan menampilkan preset ini sebagai opsi cepat saat pertama kali setup.
+
+### 2. Input Manual
+- **Pertama kali**: Pilih dari preset atau masukkan Group ID secara manual
 - **Selanjutnya**: Bot otomatis menggunakan Group ID yang tersimpan
 - **Format ID**: `120363423652785425@g.us`
+
+### 3. Clear Saved Session
+Jika Anda ingin mengubah grup target atau setelah logout WhatsApp Web, gunakan opsi "Hapus sesi tersimpan" untuk menghapus Group ID yang tersimpan.
 
 ### Cara Mendapatkan Group ID:
 
 1. **WhatsApp Web**: Buka grup → URL akan berisi ID
 2. **Contoh**: `https://web.whatsapp.com/group/120363423652785425@g.us`
 3. **Copy ID**: Bagian setelah `/group/`
-- Jika memilih otomatis, bot akan mencoba mendapatkan chat hingga 3 kali
-- Timeout 10 detik per attempt dengan jeda 3-6 detik antar retry
-- Jika semua retry gagal, otomatis beralih ke mode manual
 
 ## Konfigurasi
 
@@ -43,8 +53,15 @@ Bot menggunakan **input manual Group ID** untuk kemudahan dan reliability:
 
 ## Environment
 
-- Salin `.env.example` menjadi `.env` untuk mengubah jadwal screenshot jika diperlukan.
+- Salin `.env.example` menjadi `.env` untuk mengubah konfigurasi.
 - Jangan commit berkas `.env` yang berisi konfigurasi kustom.
+
+### Variabel yang Tersedia:
+
+- **GROUP_PRESETS**: Daftar preset Group IDs (dipisahkan koma)
+  - Contoh: `GROUP_PRESETS=120363423652785425@g.us,120363423652785426@g.us`
+  - Bot akan menampilkan ini sebagai opsi cepat saat setup
+
 - **CRON_SCHEDULE**: Mengatur kapan screenshot diambil (format cron expression)
   - `0 * * * *` = Setiap jam pada menit ke-0 (default)
   - `*/30 * * * *` = Setiap 30 menit
@@ -57,6 +74,7 @@ Bot menggunakan **input manual Group ID** untuk kemudahan dan reliability:
 - Jangan men-commit atau membagikan isi folder auth karena berisi kredensial sesi.
 - Untuk memulihkan sesi pada mesin lain, salin secara lokal folder `.wwebjs_auth/` ke direktori proyek (tidak melalui repo).
 - **Grup tersimpan**: Bot menyimpan ID grup yang dipilih di file `.saved_group_id` untuk memudahkan penggunaan di kemudian hari.
+- **Clear Session**: Gunakan opsi "Hapus sesi tersimpan" saat setup untuk menghapus Group ID tersimpan (berguna setelah logout WhatsApp Web).
 
 ## Catatan
 
